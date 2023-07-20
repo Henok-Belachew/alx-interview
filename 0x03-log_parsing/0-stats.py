@@ -1,67 +1,65 @@
 #!/usr/bin/python3
-"""
-0-stats module
+"""A module for parsing logs.
 """
 import sys
+from collections import defaultdict
+
+status_codes = defaultdict(int)
+file_size = 0
 
 
-def slicer(line):
+def print_stats(file_size, status_codes):
+    """Prints statistics about Nginx logs.
+
+    This function takes the total file size and a dictionary of status code
+    counts as arguments and prints the statistics. The function prints the
+    total file size, followed by the number of lines for each status code.
+
+    Args:
+        file_size (int): The total file size.
+        status_codes (dict): A dictionary of status code counts.
+
+    Returns:
+        None
     """
-    Slice the line into status and size information.
+    print("File size: {}".format(file_size))
+    for status_code, count in sorted(status_codes.items()):
+        if count:
+            print("{}: {}".format(status_code, count))
 
-    :param line: Line to slice
-    :type line: str
-    :return: Dictionary with the sliced line
-    :rtype: dict
+
+def main():
+    """Reads Nginx logs from standard input and computes metrics.
+
+    This function reads from standard input line by line, computes metrics,
+    and prints statistics after every 10 lines or upon receiving a keyboard
+    interrupt (CTRL + C). The function updates the global variables
+    'file_size' and 'status_codes' to keep track of the total file size and
+    status code counts.
+
+    Returns:
+        None
     """
-    lines = line.split()
-    result = {'Status': None, 'Size': None}
-    result['Size'] = lines[-1]
-    result['Status'] = lines[-2]
+    global status_codes, file_size
+    line_count = 0
 
-    return result
+    for line in sys.stdin:
+        line_count += 1
+        data = line.split()
+        try:
+            file_size += int(data[-1])
+            status_codes[int(data[-2])] += 1
+        except (ValueError, IndexError):
+            pass
 
-
-def countStore(sliced, result):
-    """
-    Count and store the statistics based on the sliced line.
-
-    :param sliced: Sliced line containing status and size information
-    :type sliced: dict
-    :param result: Dictionary with the statistics
-    :type result: dict
-    :return: None
-    """
-    status = sliced['Status']
-    if status.isdigit():
-        result.setdefault(status, 0)
-        result[status] += 1
-    result['File size'] += int(sliced['Size'])
-
-
-def printStat(result):
-    """
-    Print the statistics.
-
-    :param result: Dictionary with the statistics
-    :type result: dict
-    :return: None
-    """
-    for key, value in result.items():
-        if key.isdigit() or key == 'File size':
-            print(f"{key}: {value}")
+        if line_count % 10 == 0:
+            print_stats(file_size, status_codes)
+    print_stats(file_size, status_codes)
 
 
 if __name__ == '__main__':
-    Counter = 0
-    Result = {'File size': 0}
     try:
-        for line in sys.stdin:
-            countStore(slicer(line), Result)
-            if Counter == 10:
-                printStat(Result)
-                Counter = 0
-            Counter += 1
+        main()
     except KeyboardInterrupt:
-        printStat(Result)
+        print_stats(file_size, status_codes)
         raise
