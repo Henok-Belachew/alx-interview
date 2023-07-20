@@ -1,54 +1,67 @@
 #!/usr/bin/python3
-
+"""
+0-stats module
+"""
 import sys
 
 
-def print_msg(dict_sc, total_file_size):
+def slicer(line):
     """
-    Method to print
-    Args:
-        dict_sc: dict of status codes
-        total_file_size: total of the file
-    Returns:
-        Nothing
+    Slice the line into status and size information.
+
+    :param line: Line to slice
+    :type line: str
+    :return: Dictionary with the sliced line
+    :rtype: dict
     """
+    lines = line.split()
+    result = {'Status': None, 'Size': None}
+    result['Size'] = lines[-1]
+    result['Status'] = lines[-2]
 
-    print("File size: {}".format(total_file_size))
-    for key, val in sorted(dict_sc.items()):
-        if val != 0:
-            print("{}: {}".format(key, val))
+    return result
 
 
-total_file_size = 0
-code = 0
-counter = 0
-dict_sc = {"200": 0,
-           "301": 0,
-           "400": 0,
-           "401": 0,
-           "403": 0,
-           "404": 0,
-           "405": 0,
-           "500": 0}
+def countStore(sliced, result):
+    """
+    Count and store the statistics based on the sliced line.
 
-try:
-    for line in sys.stdin:
-        parsed_line = line.split()  # ✄ trimming
-        parsed_line = parsed_line[::-1]  # inverting
+    :param sliced: Sliced line containing status and size information
+    :type sliced: dict
+    :param result: Dictionary with the statistics
+    :type result: dict
+    :return: None
+    """
+    status = sliced['Status']
+    if status.isdigit():
+        result.setdefault(status, 0)
+        result[status] += 1
+    result['File size'] += int(sliced['Size'])
 
-        if len(parsed_line) > 2:
-            counter += 1
 
-            if counter <= 10:
-                total_file_size += int(parsed_line[0])  # file size
-                code = parsed_line[1]  # status code
+def printStat(result):
+    """
+    Print the statistics.
 
-                if (code in dict_sc.keys()):
-                    dict_sc[code] += 1
+    :param result: Dictionary with the statistics
+    :type result: dict
+    :return: None
+    """
+    for key, value in result.items():
+        if key.isdigit() or key == 'File size':
+            print(f"{key}: {value}")
 
-            if (counter == 10):
-                print_msg(dict_sc, total_file_size)
-                counter = 0
 
-finally:
-    print_msg(dict_sc, total_file_size)
+if __name__ == '__main__':
+    Counter = 0
+    Result = {'File size': 0}
+    try:
+        for line in sys.stdin:
+            countStore(slicer(line), Result)
+            if Counter == 10:
+                printStat(Result)
+                Counter = 0
+            Counter += 1
+    except KeyboardInterrupt:
+        printStat(Result)
+        raise
