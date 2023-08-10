@@ -1,17 +1,18 @@
 #!/usr/bin/node
+const util = require('util');
+const request = util.promisify(require('request'));
+const filmID = process.argv[2];
 
-const request = require('request');
+async function starwarsCharacters (filmId) {
+  const endpoint = 'https://swapi-api.hbtn.io/api/films/' + filmId;
+  let response = await (await request(endpoint)).body;
+  response = JSON.parse(response);
+  const characters = response.characters;
 
-function fetchCharacter (urls) {
-  if (urls.length === 0) return;
-  request.get(urls[0], (_error, _response, body) => {
-    console.log(JSON.parse(body).name);
-    fetchCharacter(urls.slice(1));
-  });
+  for (let i = 0; i < characters.length; i++) {
+    const urlCharacter = characters[i];
+    let character = await (await request(urlCharacter)).body;
+    character = JSON.parse(character);
+    console.log(character.name);
+  }
 }
-
-request.get('https://swapi-api.alx-tools.com/api/films/' + process.argv[2],
-  (_error, _response, body) => {
-    const characters = JSON.parse(body).characters;
-    fetchCharacter(characters);
-  });
